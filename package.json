@@ -1,0 +1,52 @@
+{
+  "name": "video-downloader",
+  "version": "1.0.0",
+  "description": "基于 yt-dlp 和 N_m3u8DL-RE 的智能视频下载器",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build && tsc -p electron/tsconfig.json && electron-builder",
+    "preview": "vite preview",
+    "electron:dev": "tsc -p electron/tsconfig.json && concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:build": "vite build && tsc -p electron/tsconfig.json && electron-builder"
+  },
+  "dependencies": {
+    "date-fns": "^3.6.0",
+    "pinia": "^2.2.6",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10",
+    "concurrently": "^9.1.0",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.video.downloader",
+    "productName": "视频下载器",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "resources/**/*"
+    ],
+    "extraResources": [
+      { "from": "scripts", "to": "scripts" }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "public/icon.icns",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    }
+  }
+}
