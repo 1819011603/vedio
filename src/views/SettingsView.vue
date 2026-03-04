@@ -56,6 +56,7 @@
         <h3>嗅探规则</h3>
         <div class="header-actions">
           <button class="btn btn-sm btn-outline" @click="add4kvmSniffRule">+ 4kvm.org</button>
+          <button class="btn btn-sm btn-outline" @click="addNcat22SniffRule">+ ncat22.com</button>
           <button class="btn btn-sm" @click="addSniffRule">+ 添加规则</button>
         </div>
       </div>
@@ -135,6 +136,7 @@
         <div class="header-actions">
           <button class="btn btn-sm btn-outline" @click="add4kvmExtractRule">+ 4kvm.org</button>
           <button class="btn btn-sm btn-outline" @click="addZiziysExtractRule">+ ziziys.org</button>
+          <button class="btn btn-sm btn-outline" @click="addNcat22ExtractRule">+ ncat22.com</button>
           <button class="btn btn-sm" @click="addExtractScriptRule">+ 添加规则</button>
         </div>
       </div>
@@ -368,6 +370,22 @@ function add4kvmSniffRule() {
   expandedSniff.value[domain] = true
 }
 
+function addNcat22SniffRule() {
+  const domains = ['ncat22.com', 'ncat23.com']
+  const rule = {
+    jsSelector: 'a[href*=".m3u8"], video source, video',
+    actionScript: `(function(){setTimeout(function(){var v=document.querySelector('video');if(v){v.play().catch(function(){});}var fs=document.querySelectorAll('iframe');for(var i=0;i<fs.length;i++){try{var d=fs[i].contentDocument;if(d){var v2=d.querySelector('video');if(v2)v2.play().catch(function(){});}}catch(e){}}},2500);})();`,
+    sniffMinWaitMs: 3000,
+    sniffMaxWaitMs: 15000,
+    defaultUrlFilter: 'regex:\\.m3u8',
+    filterRules: [{ pattern: '\\.m3u8', isRegex: true, enabled: true }, { pattern: '\\.mp4', isRegex: true, enabled: true }],
+  }
+  domains.forEach((d) => {
+    settingsStore.addSniffRule({ domain: d, ...rule })
+    expandedSniff.value[d] = true
+  })
+}
+
 function addSniffRule() {
   newSniffDomain.value = ''
   addSniffModal.value = true
@@ -416,6 +434,17 @@ function addZiziysExtractRule() {
     domain,
     name: 'ziziys 脚本提取',
     scriptPath: 'scripts/ziziys-extract-links.js',
+    defaultSeriesName: '',
+  })
+  expandedExtract.value[domain] = true
+}
+
+function addNcat22ExtractRule() {
+  const domain = 'ncat22.com'
+  settingsStore.addExtractScriptRule({
+    domain,
+    name: 'ncat22 脚本提取',
+    scriptPath: 'scripts/ncat22-extract-links.js',
     defaultSeriesName: '',
   })
   expandedExtract.value[domain] = true

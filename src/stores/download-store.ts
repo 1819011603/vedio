@@ -63,7 +63,8 @@ export const useDownloadStore = defineStore('download', () => {
   async function addTask(task: DownloadTask) {
     queue.value.push(task)
     taskMap.value[task.id] = task
-    return api?.download(task) ?? { ok: false }
+    const plainTask = JSON.parse(JSON.stringify(task))
+    return api?.download(plainTask) ?? { ok: false }
   }
 
   async function pause(id: string) {

@@ -235,7 +235,7 @@ async function doStartSniff() {
     sniffMinWaitMs: 500,
     sniffMaxWaitMs: 8000,
   }
-  const cfg = {
+  const cfg = JSON.parse(JSON.stringify({
     domain: siteConfig.domain,
     sniff: {
       jsSelector: sniff.jsSelector,
@@ -244,7 +244,7 @@ async function doStartSniff() {
       sniffMinWaitMs: sniff.sniffMinWaitMs ?? 500,
       sniffMaxWaitMs: sniff.sniffMaxWaitMs ?? 8000,
     },
-  }
+  }))
   downloadWork.clearSniffCandidates()
   downloadWork.setSniffRuleDefaults(rule?.defaultSeriesName ?? '', rule?.defaultUrlFilter ?? '')
   downloadWork.setSniffVisible(true)
@@ -379,7 +379,7 @@ async function onAddSniffedToDownload(payload: { urls: string[]; seriesName: str
       isM3u8,
       m3u8Url: isM3u8 ? url : undefined,
       videoInfo: { title: `嗅探 ${i + 1}`, url },
-      siteConfig: siteConfig.domain ? { customM3u8Params: siteConfig.customM3u8Params, cookie: siteConfig.cookie } : undefined,
+      siteConfig: siteConfig.domain ? JSON.parse(JSON.stringify({ customM3u8Params: siteConfig.customM3u8Params, cookie: siteConfig.cookie })) : undefined,
       downloadThreads: ds.downloadThreads,
       speedLimit: ds.speedLimit,
     })
@@ -396,11 +396,11 @@ function onStopSniff() {
 }
 
 async function resolveFileConflicts<T extends { savePath: string; customName: string; isM3u8?: boolean }>(tasks: T[]): Promise<T[] | null> {
-  const files = tasks.map((t) => ({
+  const files = JSON.parse(JSON.stringify(tasks.map((t) => ({
     savePath: t.savePath,
     baseName: (t.customName || 'video').replace(/\.\w+$/, ''),
     isM3u8: t.isM3u8,
-  }))
+  }))))
   const existing = await window.electronAPI?.checkFilesExist?.(files) ?? []
   if (existing.length === 0) return tasks
   const choice = await window.electronAPI?.showFileExistsDialog?.(existing.map((e) => e.existingPath))

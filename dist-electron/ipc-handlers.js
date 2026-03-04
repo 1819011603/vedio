@@ -10,6 +10,7 @@ const download_service_1 = require("./services/download-service");
 const parse_service_1 = require("./services/parse-service");
 const sniff_1 = require("./services/sniff");
 const ziziys_browser_extract_1 = require("./services/ziziys-browser-extract");
+const ncat22_browser_extract_1 = require("./services/ncat22-browser-extract");
 const downloadService = new download_service_1.DownloadService();
 const parseService = new parse_service_1.ParseService();
 let sniffSession = null;
@@ -349,6 +350,19 @@ function registerIpcHandlers() {
             catch (e) {
                 const errMsg = e?.message || '提取失败';
                 console.error('[ziziys] 提取异常:', errMsg, e);
+                return { ok: false, error: errMsg, results: [] };
+            }
+        }
+        if (/ncat2[23]\.com/i.test(u) && /ncat22-extract-links\.js/i.test(scriptPath || '')) {
+            try {
+                const res = await (0, ncat22_browser_extract_1.runNcat22BrowserExtract)(u, sendProgress);
+                return res.ok
+                    ? { ok: true, results: res.results, title: res.title }
+                    : { ok: false, error: res.error, results: [] };
+            }
+            catch (e) {
+                const errMsg = e?.message || '提取失败';
+                console.error('[ncat22] 提取异常:', errMsg, e);
                 return { ok: false, error: errMsg, results: [] };
             }
         }

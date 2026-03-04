@@ -8,6 +8,7 @@ import { ParseService } from './services/parse-service'
 import { SniffSession } from './services/sniff'
 import type { SniffResult } from './services/sniff/types'
 import { runZiziysBrowserExtract } from './services/ziziys-browser-extract'
+import { runNcat22BrowserExtract } from './services/ncat22-browser-extract'
 
 const downloadService = new DownloadService()
 const parseService = new ParseService()
@@ -349,6 +350,18 @@ export function registerIpcHandlers() {
       } catch (e: any) {
         const errMsg = e?.message || '提取失败'
         console.error('[ziziys] 提取异常:', errMsg, e)
+        return { ok: false, error: errMsg, results: [] }
+      }
+    }
+    if (/ncat2[23]\.com/i.test(u) && /ncat22-extract-links\.js/i.test(scriptPath || '')) {
+      try {
+        const res = await runNcat22BrowserExtract(u, sendProgress)
+        return res.ok
+          ? { ok: true, results: res.results, title: res.title }
+          : { ok: false, error: res.error, results: [] }
+      } catch (e: any) {
+        const errMsg = e?.message || '提取失败'
+        console.error('[ncat22] 提取异常:', errMsg, e)
         return { ok: false, error: errMsg, results: [] }
       }
     }

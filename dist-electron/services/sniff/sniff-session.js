@@ -106,6 +106,7 @@ class SniffSession {
             if (siteConfig.actionScript && this.win && !this.win.isDestroyed()) {
                 await this.win.webContents.executeJavaScript(siteConfig.actionScript);
             }
+            await this.wait(4000);
             if (this.win && !this.win.isDestroyed()) {
                 this.win.show();
             }
@@ -181,6 +182,24 @@ class SniffSession {
       })()
     `);
         const results = [];
+        if (items.length === 0) {
+            await this.wait(minWaitMs);
+            const start = Date.now();
+            while (Date.now() - start < maxWaitMs - minWaitMs && this.candidates.length === 0) {
+                await this.wait(300);
+            }
+            if (this.candidates.length > 0) {
+                const best = (0, response_sniffer_1.selectBestCandidate)(this.candidates, 0, [0, 999999]);
+                const r = {
+                    best: best ?? undefined,
+                    candidates: [...this.candidates],
+                    episodeLabel: '当前',
+                };
+                results.push(r);
+                onEach?.(r, 0);
+            }
+            return results;
+        }
         for (const item of items) {
             const ok = await this.win.webContents.executeJavaScript(`
         (function() {

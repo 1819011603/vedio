@@ -100,12 +100,14 @@ async function getRealUrlFromBody(body) {
   return { type: 'm3u8', url: source }
 }
 
-/** 从页面 HTML 解析标题（og:title 或 h1） */
+/** 从页面 HTML 解析标题（og:title > div.data>h1 > h1） */
 function parsePageTitle(html) {
   const ogMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)
   if (ogMatch) {
     return ogMatch[1].replace(/\s*[-–—]\s*全集免费在线播放.*$/, '').replace(/\s*[-–—]\s*4k影视.*$/, '').trim()
   }
+  const dataH1Match = html.match(/<div[^>]*class="[^"]*\bdata\b[^"]*"[^>]*>[\s\S]*?<h1[^>]*>([^<]+)<\/h1>/i)
+  if (dataH1Match) return dataH1Match[1].replace(/\s+/g, ' ').trim()
   const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
   if (h1Match) return h1Match[1].replace(/\s+/g, ' ').trim()
   return ''

@@ -18,12 +18,13 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "concurrently": "^9.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
+    "playwright": "^1.58.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
     "vue-tsc": "^2.1.10",
-    "concurrently": "^9.1.0",
     "wait-on": "^8.0.1"
   },
   "build": {
@@ -38,15 +39,24 @@
       "resources/**/*"
     ],
     "extraResources": [
-      { "from": "scripts", "to": "scripts" }
+      {
+        "from": "scripts",
+        "to": "scripts"
+      }
     ],
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "public/icon.icns",
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ]
     }
   }
 }
