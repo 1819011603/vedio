@@ -167,7 +167,7 @@ function parseEpisodeCount(html, id, sid) {
 }
 const isCdndefend = (html) => html.includes('cdndefend') || html.includes('verifying your browser');
 /** 在浏览器中执行 ncat22 提取，绕过 cdndefend */
-async function runNcat22BrowserExtract(pageUrl, onProgress) {
+async function runNcat22BrowserExtract(pageUrl, onProgress, opts) {
     const parsed = parsePlayUrl(pageUrl);
     if (!parsed) {
         return { ok: false, error: '无法解析 URL，需为 /play/{id}-{sid}-{ep}.html 格式' };
@@ -272,15 +272,17 @@ async function runNcat22BrowserExtract(pageUrl, onProgress) {
                 onProgress?.('未解析到集数，默认 10 集');
             }
         }
+        const startN = opts?.startEp != null && opts?.endEp != null ? opts.startEp : 1;
+        const endN = opts?.startEp != null && opts?.endEp != null ? opts.endEp : episodeCount;
         if (pageTitle)
             onProgress?.(`标题: ${pageTitle}`);
-        onProgress?.(`共 ${episodeCount} 集，开始提取...`);
+        onProgress?.(`提取第 ${startN}–${endN} 集（共 ${endN - startN + 1} 集）...`);
         const results = [];
-        for (let n = 1; n <= episodeCount; n++) {
+        for (let n = startN; n <= endN; n++) {
             if (win.isDestroyed())
                 break;
             const playUrl = isMovie ? pageUrl : `${baseOrigin}/play/${id}-${sid}-${n}.html`;
-            onProgress?.(`第 ${n}/${episodeCount} 集...`);
+            onProgress?.(`第 ${n}/${endN} 集...`);
             try {
                 if (!isMovie && n > 1) {
                     await win.loadURL(playUrl, { userAgent: UA });
@@ -312,7 +314,7 @@ async function runNcat22BrowserExtract(pageUrl, onProgress) {
                 const err = e;
                 onProgress?.(`第 ${n} 集: ${err?.message || '异常'}`);
             }
-            if (n < episodeCount)
+            if (n < endN)
                 await new Promise((r) => setTimeout(r, 400));
         }
         try {

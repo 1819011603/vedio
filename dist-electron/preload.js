@@ -48,7 +48,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     selectFolder: () => electron_1.ipcRenderer.invoke('select-folder'),
     selectFile: () => electron_1.ipcRenderer.invoke('select-file'),
     selectScriptFile: () => electron_1.ipcRenderer.invoke('select-script-file'),
-    runExtractScript: (url, scriptPath) => electron_1.ipcRenderer.invoke('run-extract-script', url, scriptPath),
+    runExtractScript: (url, scriptPath, opts) => electron_1.ipcRenderer.invoke('run-extract-script', url, scriptPath, opts),
     getAppPath: () => electron_1.ipcRenderer.invoke('get-app-path'),
     getResourcesPath: () => electron_1.ipcRenderer.invoke('get-resources-path'),
 });

@@ -192,10 +192,16 @@ function parseArtplayerUrl(url) {
 
 async function main() {
   const argUrl = process.argv[2]
-  const argEpCount = parseInt(process.argv[3], 10)
+  const arg1 = parseInt(process.argv[3], 10)
+  const arg2 = parseInt(process.argv[4], 10)
+  const hasRangeArgs = process.argv.length >= 5
+  const rangeStart = hasRangeArgs && arg1 > 0 ? arg1 : null
+  const rangeEnd = hasRangeArgs && arg2 > 0 ? arg2 : null
+  const fromStartOnly = hasRangeArgs && arg1 > 0 && arg2 === 0
+  const toEndOnly = hasRangeArgs && arg1 === 0 && arg2 > 0
 
   if (!argUrl) {
-    console.error('用法: node 4kvm-extract-links.js <URL> [集数]')
+    console.error('用法: node 4kvm-extract-links.js <URL> [起始集] [结束集] 或 [集数]')
     process.exit(1)
   }
 
@@ -214,7 +220,13 @@ async function main() {
       episodeCount = 1
       movieArtUrl = url.replace(/&amp;/g, '&')
     } else {
-      episodeCount = Number.isFinite(argEpCount) && argEpCount > 0 ? argEpCount : 10
+      if (fromStartOnly) {
+        episodeCount = await detectEpisodeCount(id, source, url)
+        if (episodeCount < arg1) episodeCount = arg1
+      } else {
+        episodeCount = (rangeStart != null && rangeEnd != null) ? rangeEnd
+          : (toEndOnly ? rangeEnd : (rangeStart != null ? rangeStart : 10))
+      }
     }
   } else {
     const isMovie = /\/movies\/[^/?#]+/.test(url)
@@ -252,16 +264,33 @@ async function main() {
       }
       console.error(`自动探测到 ${episodeCount} 集`)
     }
+    if (rangeStart != null && rangeEnd != null) {
+      episodeCount = rangeEnd
+    } else if (rangeStart != null && !rangeEnd) {
+      episodeCount = rangeStart
+    }
     pageTitle = parsePageTitle(html)
     if (pageTitle) console.error(`标题: ${pageTitle}`)
   }
 
   const base = movieArtUrl || `https://www.4kvm.org/artplayer?id=${id}&source=${source}&ep=`
   const results = []
+  let startEp0 = 0
+  let endEp0 = episodeCount - 1
+  if (rangeStart != null && rangeEnd != null) {
+    startEp0 = rangeStart - 1
+    endEp0 = rangeEnd - 1
+  } else if (fromStartOnly) {
+    startEp0 = arg1 - 1
+    endEp0 = episodeCount - 1
+  } else if (toEndOnly) {
+    startEp0 = 0
+    endEp0 = arg2 - 1
+  }
 
-  console.error(`共 ${episodeCount} 集，开始提取...`)
+  console.error(`提取第 ${startEp0 + 1}–${endEp0 + 1} 集（共 ${endEp0 - startEp0 + 1} 集）...`)
 
-  for (let ep = 0; ep < episodeCount; ep++) {
+  for (let ep = startEp0; ep <= endEp0; ep++) {
     const artUrl = movieArtUrl ? base : base + ep
     try {
       const res = await fetch(artUrl)
@@ -280,7 +309,7 @@ async function main() {
     } catch (e) {
       console.error(`第 ${ep + 1} 集: ${e.message}`)
     }
-    if (ep < episodeCount - 1) {
+    if (ep < endEp0) {
       await new Promise((r) => setTimeout(r, 300))
     }
   }

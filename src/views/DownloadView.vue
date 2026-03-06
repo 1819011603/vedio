@@ -19,7 +19,7 @@
           v-if="extractRule"
           class="btn btn-secondary"
           :disabled="parsing || extractRunning || !effectiveUrl"
-          @click="runExtractScript"
+          @click="showExtractDialog"
         >
           {{ extractRunning ? '提取中...' : '脚本提取' }}
         </button>
@@ -82,6 +82,12 @@
       @add-to-download="onAddSniffedToDownload"
       @stop="onStopSniff"
     />
+
+    <ExtractSettingsDialog
+      :visible="extractDialogVisible"
+      @confirm="onExtractConfirm"
+      @cancel="extractDialogVisible = false"
+    />
   </div>
 </template>
 
@@ -95,6 +101,7 @@ import { useSettingsStore } from '@/stores/settings-store'
 import VideoInfoCard from '@/components/VideoInfoCard.vue'
 import ParseQueue from '@/components/ParseQueue.vue'
 import SniffPanel from '@/components/SniffPanel.vue'
+import ExtractSettingsDialog from '@/components/ExtractSettingsDialog.vue'
 
 defineOptions({ name: 'DownloadView' })
 
@@ -118,6 +125,7 @@ const parsing = ref(false)
 const sniffStarting = ref(false)
 const extractRunning = ref(false)
 const scriptFallbackToast = ref(false)
+const extractDialogVisible = ref(false)
 
 const effectiveUrl = computed(() => {
   const u = (urlInput.value || lastParseUrl.value || '').trim()
@@ -256,13 +264,18 @@ async function doStartSniff() {
   })
 }
 
-async function runExtractScript() {
+function showExtractDialog() {
+  extractDialogVisible.value = true
+}
+
+async function onExtractConfirm(opts: { startEp?: number; endEp?: number }) {
+  extractDialogVisible.value = false
   const url = effectiveUrl.value
   const rule = extractRule.value
   if (!url || !rule?.scriptPath || extractRunning.value) return
   extractRunning.value = true
   try {
-    const res = await window.electronAPI?.runExtractScript?.(url, rule.scriptPath)
+    const res = await window.electronAPI?.runExtractScript?.(url, rule.scriptPath, opts)
     if (!res?.ok || !res.results?.length) {
       parseError.value = res?.error || '脚本未返回有效链接'
       return

@@ -145,7 +145,8 @@ const isCdndefend = (html: string) =>
 /** 在浏览器中执行 ncat22 提取，绕过 cdndefend */
 export async function runNcat22BrowserExtract(
   pageUrl: string,
-  onProgress?: (msg: string) => void
+  onProgress?: (msg: string) => void,
+  opts?: { startEp?: number; endEp?: number }
 ): Promise<{ ok: boolean; title?: string; results?: Array<{ episode: number; type: string; url: string }>; error?: string }> {
   const parsed = parsePlayUrl(pageUrl)
   if (!parsed) {
@@ -240,16 +241,18 @@ export async function runNcat22BrowserExtract(
         onProgress?.('未解析到集数，默认 10 集')
       }
     }
+    const startN = opts?.startEp != null && opts?.endEp != null ? opts.startEp : 1
+    const endN = opts?.startEp != null && opts?.endEp != null ? opts.endEp : episodeCount
     if (pageTitle) onProgress?.(`标题: ${pageTitle}`)
-    onProgress?.(`共 ${episodeCount} 集，开始提取...`)
+    onProgress?.(`提取第 ${startN}–${endN} 集（共 ${endN - startN + 1} 集）...`)
 
     const results: Array<{ episode: number; type: string; url: string }> = []
 
-    for (let n = 1; n <= episodeCount; n++) {
+    for (let n = startN; n <= endN; n++) {
       if (win.isDestroyed()) break
       const playUrl = isMovie ? pageUrl : `${baseOrigin}/play/${id}-${sid}-${n}.html`
 
-      onProgress?.(`第 ${n}/${episodeCount} 集...`)
+      onProgress?.(`第 ${n}/${endN} 集...`)
       try {
         if (!isMovie && n > 1) {
           await win.loadURL(playUrl, { userAgent: UA })
@@ -279,7 +282,7 @@ export async function runNcat22BrowserExtract(
         const err = e as Error
         onProgress?.(`第 ${n} 集: ${err?.message || '异常'}`)
       }
-      if (n < episodeCount) await new Promise((r) => setTimeout(r, 400))
+      if (n < endN) await new Promise((r) => setTimeout(r, 400))
     }
 
     try {

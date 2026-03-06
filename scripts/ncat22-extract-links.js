@@ -226,10 +226,18 @@ function parsePageInfo(html, id, sid) {
 
 async function main() {
   const argUrl = process.argv[2]
-  const argEp = parseInt(process.argv[3], 10)
+  const arg1 = parseInt(process.argv[3], 10)
+  const arg2 = parseInt(process.argv[4], 10)
+  const hasRangeArgs = process.argv.length >= 5
+  // 选集：arg1,arg2 为 0 表示默认。arg1>0,arg2>0=范围；arg1>0,arg2=0=从arg1到末；arg1=0,arg2>0=从1到arg2；无/全0=全部
+  const rangeStart = hasRangeArgs && arg1 > 0 ? arg1 : null
+  const rangeEnd = hasRangeArgs && arg2 > 0 ? arg2 : null
+  const fromStartOnly = hasRangeArgs && arg1 > 0 && arg2 === 0
+  const toEndOnly = hasRangeArgs && arg1 === 0 && arg2 > 0
+  const argEp = !hasRangeArgs && Number.isFinite(arg1) && arg1 > 0 ? arg1 : null
 
   if (!argUrl) {
-    console.log('用法: node ncat22-extract-links.js <URL> [集数]')
+    console.log('用法: node ncat22-extract-links.js <URL> [起始集] [结束集] 或 [集数]')
     process.exit(1)
   }
 
@@ -253,7 +261,7 @@ async function main() {
   let pageTitle = ''
   let episodeCount = 1
 
-  if (!isMovie || argEp) {
+  if (!isMovie || argEp || hasRangeArgs) {
     let html
     try {
       const res = await fetch(url, { refererOrigin: baseOrigin })
@@ -269,7 +277,18 @@ async function main() {
     }
     const info = parsePageInfo(html, id, sid)
     pageTitle = info.title
-    episodeCount = Number.isFinite(argEp) && argEp > 0 ? argEp : (info.episodeCount || 1)
+    const autoCount = info.episodeCount || 1
+    if (rangeStart != null && rangeEnd != null) {
+      episodeCount = rangeEnd
+    } else if (fromStartOnly) {
+      episodeCount = autoCount
+    } else if (toEndOnly) {
+      episodeCount = rangeEnd
+    } else if (argEp != null) {
+      episodeCount = argEp
+    } else {
+      episodeCount = autoCount
+    }
     if (episodeCount === 1 && !isMovie) {
       episodeCount = 10
       console.log('未解析到集数，默认 10 集，可手动指定: node ncat22-extract-links.js <URL> <集数>')
@@ -278,9 +297,21 @@ async function main() {
   }
 
   const results = []
-  console.log(`共 ${episodeCount} 集，开始提取...`)
+  let startN = 1
+  let endN = episodeCount
+  if (rangeStart != null && rangeEnd != null) {
+    startN = rangeStart
+    endN = rangeEnd
+  } else if (fromStartOnly) {
+    startN = arg1
+    endN = episodeCount
+  } else if (toEndOnly) {
+    startN = 1
+    endN = arg2
+  }
+  console.log(`提取第 ${startN}–${endN} 集（共 ${endN - startN + 1} 集）...`)
 
-  for (let n = 1; n <= episodeCount; n++) {
+  for (let n = startN; n <= endN; n++) {
     const playUrl = isMovie ? url : `${baseOrigin}/play/${id}-${sid}-${n}.html`
     try {
       const res = await fetch(playUrl, { refererOrigin: baseOrigin })

@@ -169,7 +169,7 @@ function postToKvmplay(sourceUrl, body) {
     });
 }
 /** 在浏览器中执行 ziziys 提取 */
-async function runZiziysBrowserExtract(pageUrl, onProgress) {
+async function runZiziysBrowserExtract(pageUrl, onProgress, opts) {
     const parsed = parseVideoUrl(pageUrl);
     if (!parsed) {
         return { ok: false, error: '无法解析 URL，需为 /video/{id}-{sid}-{ep}.html 格式' };
@@ -325,12 +325,14 @@ async function runZiziysBrowserExtract(pageUrl, onProgress) {
       })()
     `);
         const { title, episodeCount } = pageInfo;
-        onProgress?.(`共 ${episodeCount} 集，开始提取...`);
+        const startN = opts?.startEp != null && opts?.endEp != null ? opts.startEp : 1;
+        const endN = opts?.startEp != null && opts?.endEp != null ? opts.endEp : episodeCount;
+        onProgress?.(`提取第 ${startN}–${endN} 集（共 ${endN - startN + 1} 集）...`);
         const results = [];
-        for (let n = 1; n <= episodeCount; n++) {
+        for (let n = startN; n <= endN; n++) {
             if (win.isDestroyed())
                 break;
-            onProgress?.(`第 ${n}/${episodeCount} 集...`);
+            onProgress?.(`第 ${n}/${endN} 集...`);
             const playerUrl = `https://www.ziziys.org/vod/player/id/${id}/nid/${n}/sid/${sid}.html`;
             try {
                 const playerData = await safeExec(`
@@ -376,7 +378,7 @@ async function runZiziysBrowserExtract(pageUrl, onProgress) {
                 onProgress?.(msg);
                 console.error('[ziziys]', msg, e);
             }
-            if (n < episodeCount)
+            if (n < endN)
                 await new Promise((r) => setTimeout(r, 800));
         }
         try {
@@ -389,12 +391,12 @@ async function runZiziysBrowserExtract(pageUrl, onProgress) {
         }
         const successSet = new Set(results.map((r) => r.episode));
         const failed = [];
-        for (let i = 1; i <= episodeCount; i++) {
+        for (let i = startN; i <= endN; i++) {
             if (!successSet.has(i))
                 failed.push(i);
         }
         if (failed.length > 0) {
-            const summary = `提取完成: 成功 ${results.length}/${episodeCount} 集，失败: 第${failed.join('、')}集`;
+            const summary = `提取完成: 成功 ${results.length}/${endN - startN + 1} 集，失败: 第${failed.join('、')}集`;
             onProgress?.(summary);
             console.error('[ziziys]', summary);
         }

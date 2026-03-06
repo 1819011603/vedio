@@ -329,7 +329,7 @@ function registerIpcHandlers() {
         }
         return { ok: true };
     });
-    electron_1.ipcMain.handle('run-extract-script', async (event, url, scriptPath) => {
+    electron_1.ipcMain.handle('run-extract-script', async (event, url, scriptPath, opts) => {
         const u = String(url || '').trim();
         const target = event.sender;
         const sendProgress = (msg) => {
@@ -342,7 +342,7 @@ function registerIpcHandlers() {
         };
         if (/ziziys\.org/i.test(u) && /ziziys-extract-links\.js/i.test(scriptPath || '')) {
             try {
-                const res = await (0, ziziys_browser_extract_1.runZiziysBrowserExtract)(u, sendProgress);
+                const res = await (0, ziziys_browser_extract_1.runZiziysBrowserExtract)(u, sendProgress, opts);
                 return res.ok
                     ? { ok: true, results: res.results, title: res.title }
                     : { ok: false, error: res.error, results: [] };
@@ -355,7 +355,7 @@ function registerIpcHandlers() {
         }
         if (/ncat2[23]\.com/i.test(u) && /ncat22-extract-links\.js/i.test(scriptPath || '')) {
             try {
-                const res = await (0, ncat22_browser_extract_1.runNcat22BrowserExtract)(u, sendProgress);
+                const res = await (0, ncat22_browser_extract_1.runNcat22BrowserExtract)(u, sendProgress, opts);
                 return res.ok
                     ? { ok: true, results: res.results, title: res.title }
                     : { ok: false, error: res.error, results: [] };
@@ -372,7 +372,14 @@ function registerIpcHandlers() {
                 ? scriptPath
                 : (0, path_1.join)(appPath, scriptPath);
             const nodeCmd = process.platform === 'win32' ? 'node.exe' : 'node';
-            const proc = (0, child_process_1.spawn)(nodeCmd, [resolved, url], {
+            const args = [resolved, url];
+            const startEp = opts?.startEp;
+            const endEp = opts?.endEp;
+            if (startEp != null || endEp != null) {
+                args.push(String(startEp != null && startEp >= 1 ? startEp : 0));
+                args.push(String(endEp != null && endEp >= 1 ? endEp : 0));
+            }
+            const proc = (0, child_process_1.spawn)(nodeCmd, args, {
                 cwd: appPath,
                 stdio: ['ignore', 'pipe', 'pipe'],
             });

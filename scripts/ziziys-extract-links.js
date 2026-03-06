@@ -166,10 +166,17 @@ function parsePageInfo(html, id, sid) {
 
 async function main() {
   const argUrl = process.argv[2]
-  const argEp = parseInt(process.argv[3], 10)
+  const arg1 = parseInt(process.argv[3], 10)
+  const arg2 = parseInt(process.argv[4], 10)
+  const hasRangeArgs = process.argv.length >= 5
+  const rangeStart = hasRangeArgs && arg1 > 0 ? arg1 : null
+  const rangeEnd = hasRangeArgs && arg2 > 0 ? arg2 : null
+  const fromStartOnly = hasRangeArgs && arg1 > 0 && arg2 === 0
+  const toEndOnly = hasRangeArgs && arg1 === 0 && arg2 > 0
+  const argEp = !hasRangeArgs && Number.isFinite(arg1) && arg1 > 0 ? arg1 : null
 
   if (!argUrl) {
-    console.error('用法: node ziziys-extract-links.js <URL> [集数]')
+    console.error('用法: node ziziys-extract-links.js <URL> [起始集] [结束集] 或 [集数]')
     process.exit(1)
   }
 
@@ -189,7 +196,7 @@ async function main() {
   let pageTitle = ''
   let episodeCount = 1
 
-  if (!isMovie || argEp) {
+  if (!isMovie || argEp || hasRangeArgs) {
     let html
     try {
       const res = await fetch(url)
@@ -201,7 +208,18 @@ async function main() {
     }
     const info = parsePageInfo(html, id, sid)
     pageTitle = info.title
-    episodeCount = Number.isFinite(argEp) && argEp > 0 ? argEp : (info.episodeCount || 1)
+    const autoCount = info.episodeCount || 1
+    if (rangeStart != null && rangeEnd != null) {
+      episodeCount = rangeEnd
+    } else if (fromStartOnly) {
+      episodeCount = autoCount
+    } else if (toEndOnly) {
+      episodeCount = rangeEnd
+    } else if (argEp != null) {
+      episodeCount = argEp
+    } else {
+      episodeCount = autoCount
+    }
     if (episodeCount === 1 && !isMovie) {
       episodeCount = 10
       console.error('未解析到集数，默认 10 集，可手动指定: node ziziys-extract-links.js <URL> <集数>')
@@ -212,10 +230,22 @@ async function main() {
   }
 
   const results = []
+  let startN = 1
+  let endN = episodeCount
+  if (rangeStart != null && rangeEnd != null) {
+    startN = rangeStart
+    endN = rangeEnd
+  } else if (fromStartOnly) {
+    startN = arg1
+    endN = episodeCount
+  } else if (toEndOnly) {
+    startN = 1
+    endN = arg2
+  }
 
-  console.error(`共 ${episodeCount} 集，开始提取...`)
+  console.error(`提取第 ${startN}–${endN} 集（共 ${endN - startN + 1} 集）...`)
 
-  for (let n = 1; n <= episodeCount; n++) {
+  for (let n = startN; n <= endN; n++) {
     const playerUrl = `https://www.ziziys.org/vod/player/id/${id}/nid/${n}/sid/${sid}.html`
     try {
       const res = await fetch(playerUrl)
@@ -243,7 +273,7 @@ async function main() {
     } catch (e) {
       console.error(`[第 ${n} 集] 异常: ${e.message}`)
     }
-    if (n < episodeCount) await new Promise((r) => setTimeout(r, 300))
+    if (n < endN) await new Promise((r) => setTimeout(r, 300))
   }
 
   const output = pageTitle ? { title: pageTitle, results } : results

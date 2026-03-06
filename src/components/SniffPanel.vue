@@ -71,6 +71,14 @@
         >
           {{ allSelected ? '取消全选' : '全选' }}
         </button>
+        <button
+          class="btn btn-sm btn-ghost"
+          :disabled="selectedKeys.size === 0"
+          title="复制选中链接到剪贴板"
+          @click="copyLinks"
+        >
+          复制链接
+        </button>
         <button class="btn btn-sm" :disabled="selectedKeys.size === 0" @click="addToDownload">
           加入下载 ({{ selectedKeys.size }})
         </button>
@@ -159,11 +167,24 @@ function toggleSelect(key: string) {
   selectedKeys.value = set
 }
 
-function addToDownload() {
+function getSelectedUrls(): string[] {
   const order = filteredCandidates.value.filter((item) =>
     selectedKeys.value.has(getItemKey(item.c, item.origIdx))
   )
-  const urls = order.map((item) => item.c.url)
+  return order.map((item) => item.c.url)
+}
+
+async function copyLinks() {
+  const urls = getSelectedUrls()
+  if (urls.length === 0) return
+  try {
+    await navigator.clipboard.writeText(urls.join('\n'))
+  } catch (_) {}
+}
+
+function addToDownload() {
+  const urls = getSelectedUrls()
+  if (urls.length === 0) return
   const ep = startEpisode.value === '' ? 1 : Number(startEpisode.value)
   emit('addToDownload', {
     urls,
