@@ -362,8 +362,8 @@ async function startDownload() {
   downloadWork.setSelectedIds(new Set())
 }
 
-async function onAddSniffedToDownload(payload: { urls: string[]; seriesName: string; startEpisode: number | null }) {
-  let { urls, seriesName, startEpisode } = payload
+async function onAddSniffedToDownload(payload: { urls: string[]; seriesName: string; startEpisode: number | null; episodeLabels?: string[] }) {
+  let { urls, seriesName, startEpisode, episodeLabels } = payload
   if (!savePath.value || urls.length === 0) return
   const rawName = seriesName.trim()
   if (rawName) {
@@ -375,7 +375,10 @@ async function onAddSniffedToDownload(payload: { urls: string[]; seriesName: str
   const tasks: any[] = []
   urls.forEach((url, i) => {
     let customName: string
-    if (base && startEpisode != null) {
+    const epLabel = episodeLabels?.[i]
+    if (base && epLabel) {
+      customName = `${base}-${epLabel}`
+    } else if (base && startEpisode != null) {
       customName = `${base}-第${startEpisode + i}集`
     } else if (base) {
       customName = `${base}_${i + 1}`

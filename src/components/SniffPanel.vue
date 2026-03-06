@@ -99,7 +99,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'addToDownload', payload: { urls: string[]; seriesName: string; startEpisode: number | null }): void
+  (e: 'addToDownload', payload: { urls: string[]; seriesName: string; startEpisode: number | null; episodeLabels?: string[] }): void
   (e: 'stop'): void
 }>()
 
@@ -183,13 +183,18 @@ async function copyLinks() {
 }
 
 function addToDownload() {
-  const urls = getSelectedUrls()
-  if (urls.length === 0) return
+  const order = filteredCandidates.value.filter((item) =>
+    selectedKeys.value.has(getItemKey(item.c, item.origIdx))
+  )
+  if (order.length === 0) return
+  const urls = order.map((item) => item.c.url)
+  const episodeLabels = order.map((item) => item.c.episodeLabel)
   const ep = startEpisode.value === '' ? 1 : Number(startEpisode.value)
   emit('addToDownload', {
     urls,
     seriesName: seriesName.value.trim(),
     startEpisode: !isNaN(ep) && ep >= 1 ? ep : 1,
+    episodeLabels: episodeLabels.some(Boolean) ? episodeLabels : undefined,
   })
 }
 
