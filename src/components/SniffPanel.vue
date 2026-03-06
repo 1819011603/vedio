@@ -99,7 +99,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'addToDownload', payload: { urls: string[]; seriesName: string; startEpisode: number | null; episodeLabels?: string[] }): void
+  (e: 'addToDownload', payload: { urls: string[]; seriesName: string; startEpisode: number | null }): void
   (e: 'stop'): void
 }>()
 
@@ -139,6 +139,13 @@ const allSelected = computed(() => {
   if (list.length === 0) return false
   return list.every((item) => selectedKeys.value.has(getItemKey(item.c, item.origIdx)))
 })
+
+/** 从 episodeLabel 如 "第78集" 或 "78" 解析出集数 */
+function parseEpisodeFromLabel(label: string | undefined): number | null {
+  if (!label) return null
+  const m = label.match(/(\d+)/)
+  return m ? parseInt(m[1], 10) : null
+}
 
 function selectAll() {
   const list = filteredCandidates.value
@@ -188,13 +195,11 @@ function addToDownload() {
   )
   if (order.length === 0) return
   const urls = order.map((item) => item.c.url)
-  const episodeLabels = order.map((item) => item.c.episodeLabel)
   const ep = startEpisode.value === '' ? 1 : Number(startEpisode.value)
   emit('addToDownload', {
     urls,
     seriesName: seriesName.value.trim(),
     startEpisode: !isNaN(ep) && ep >= 1 ? ep : 1,
-    episodeLabels: episodeLabels.some(Boolean) ? episodeLabels : undefined,
   })
 }
 
@@ -218,6 +223,16 @@ watch([sniffRuleDefaultSeriesName, sniffRuleDefaultUrlFilter], ([name, filter]) 
     filterInput.value = (filter as string) || ''
   }
 })
+
+watch(selectedKeys, () => {
+  const order = filteredCandidates.value.filter((item) =>
+    selectedKeys.value.has(getItemKey(item.c, item.origIdx))
+  )
+  if (order.length > 0) {
+    const eps = order.map((item) => parseEpisodeFromLabel(item.c.episodeLabel)).filter((n): n is number => n != null)
+    if (eps.length > 0) startEpisode.value = Math.min(...eps)
+  }
+}, { deep: true })
 </script>
 
 <style scoped>

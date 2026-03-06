@@ -362,8 +362,8 @@ async function startDownload() {
   downloadWork.setSelectedIds(new Set())
 }
 
-async function onAddSniffedToDownload(payload: { urls: string[]; seriesName: string; startEpisode: number | null; episodeLabels?: string[] }) {
-  let { urls, seriesName, startEpisode, episodeLabels } = payload
+async function onAddSniffedToDownload(payload: { urls: string[]; seriesName: string; startEpisode: number | null }) {
+  let { urls, seriesName, startEpisode } = payload
   if (!savePath.value || urls.length === 0) return
   const rawName = seriesName.trim()
   if (rawName) {
@@ -372,16 +372,12 @@ async function onAddSniffedToDownload(payload: { urls: string[]; seriesName: str
   }
   const ds = settingsStore.downloadSettings
   const base = seriesName.replace(/[/\\?*:|"<>]/g, '_').trim()
+  const startEp = startEpisode != null && startEpisode >= 1 ? startEpisode : 1
   const tasks: any[] = []
   urls.forEach((url, i) => {
     let customName: string
-    const epLabel = episodeLabels?.[i]
-    if (base && epLabel) {
-      customName = `${base}-${epLabel}`
-    } else if (base && startEpisode != null) {
-      customName = `${base}-第${startEpisode + i}集`
-    } else if (base) {
-      customName = `${base}_${i + 1}`
+    if (base) {
+      customName = `${base}-第${startEp + i}集`
     } else {
       customName = `嗅探_${i + 1}`
     }

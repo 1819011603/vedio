@@ -44,7 +44,13 @@ onMounted(() => {
       downloadWork.addSniffCandidate(c)
     }) ?? (() => {}),
     window.electronAPI?.onSniffResult?.((r) => {
-      if (r.candidates?.length) downloadWork.addSniffCandidates(r.candidates)
+      if (r.candidates?.length) {
+        const withLabel = r.candidates.map((c) => ({
+          ...c,
+          episodeLabel: c.episodeLabel ?? r.episodeLabel,
+        }))
+        downloadWork.addSniffCandidates(withLabel)
+      }
     }) ?? (() => {}),
     window.electronAPI?.onSniffWindowClosed?.(() => {
       sniffUnsub.forEach((f) => f())
