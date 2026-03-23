@@ -38,6 +38,19 @@
         />
         <span class="input-hint">同时进行的下载任务数量，建议 1–5</span>
       </div>
+      <div class="form-row">
+        <label>默认下载目录:</label>
+        <div class="input-with-btn">
+          <input
+            v-model="downloadDir"
+            type="text"
+            placeholder="留空则下载页首次使用应用所在目录"
+            @blur="saveDownloadSettings"
+          />
+          <button type="button" class="btn btn-sm" @click="selectDownloadDir">选择</button>
+        </div>
+        <span class="input-hint">下载页「保存路径」初次为空时会用此处；仍可在下载页临时更换</span>
+      </div>
     </section>
 
     <section class="setting-section debug-section">
@@ -294,20 +307,32 @@ const showOutput = ref(settingsStore.showParseDownloadOutput)
 const downloadThreads = ref(settingsStore.downloadSettings.downloadThreads)
 const speedLimit = ref(settingsStore.downloadSettings.speedLimit)
 const maxConcurrent = ref(settingsStore.downloadSettings.maxConcurrent)
+const downloadDir = ref(settingsStore.downloadSettings.downloadDir ?? '')
 
 function saveDownloadSettings() {
   const threads = Number(downloadThreads.value)
   const normalized = Number.isFinite(threads) && threads >= 0 ? threads : 0
   const concurrent = Number(maxConcurrent.value)
   const concurrentNorm = Number.isFinite(concurrent) && concurrent >= 1 ? Math.floor(concurrent) : 1
+  const dir = downloadDir.value.trim()
   settingsStore.setDownloadSettings({
     downloadThreads: normalized,
     speedLimit: speedLimit.value.trim(),
     maxConcurrent: concurrentNorm,
+    downloadDir: dir,
   })
   downloadThreads.value = normalized
   maxConcurrent.value = concurrentNorm
+  downloadDir.value = dir
   window.electronAPI?.setDownloadSettings?.({ maxConcurrent: concurrentNorm })
+}
+
+async function selectDownloadDir() {
+  const path = await window.electronAPI?.selectFolder?.()
+  if (path) {
+    downloadDir.value = path
+    saveDownloadSettings()
+  }
 }
 
 function onToggleOutput() {
@@ -331,6 +356,7 @@ onMounted(() => {
   downloadThreads.value = settingsStore.downloadSettings.downloadThreads
   speedLimit.value = settingsStore.downloadSettings.speedLimit
   maxConcurrent.value = settingsStore.downloadSettings.maxConcurrent
+  downloadDir.value = settingsStore.downloadSettings.downloadDir ?? ''
   window.electronAPI?.setDebugOutputEnabled?.(settingsStore.showParseDownloadOutput)
   window.electronAPI?.setDownloadSettings?.({ maxConcurrent: settingsStore.downloadSettings.maxConcurrent })
   settingsStore.siteList.forEach((s) => { expanded.value[s.domain] = true })

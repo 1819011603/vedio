@@ -76,12 +76,15 @@ export interface DownloadSettings {
   downloadThreads: number
   speedLimit: string
   maxConcurrent: number
+  /** 默认保存目录，留空则下载页首次使用应用路径 */
+  downloadDir: string
 }
 
 const defaultDownloadSettings = (): DownloadSettings => ({
   downloadThreads: 0,
   speedLimit: '',
   maxConcurrent: 1,
+  downloadDir: '',
 })
 
 const defaultExtractScriptRule = (domain: string, name?: string): ExtractScriptRule => ({

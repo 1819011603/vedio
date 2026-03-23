@@ -430,8 +430,14 @@ async function resolveFileConflicts<T extends { savePath: string; customName: st
 }
 
 onMounted(async () => {
+  if (savePath.value) return
+  const fromSettings = (settingsStore.downloadSettings.downloadDir ?? '').trim()
+  if (fromSettings) {
+    savePath.value = fromSettings
+    return
+  }
   const path = await window.electronAPI?.getAppPath?.()
-  if (path && !savePath.value) savePath.value = path
+  if (path) savePath.value = path
 })
 </script>
 
